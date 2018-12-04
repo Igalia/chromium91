@@ -243,52 +243,60 @@ if (!is_android && !is_mac) {
     }
 
     if (is_linux || is_chromeos) {
-      sources += [
-        "app/chrome_dll_resource.h",
-        "app/chrome_main.cc",
-        "app/chrome_main_delegate.cc",
-        "app/chrome_main_delegate.h",
-      ]
-
-      deps += [
-        # On Linux, link the dependencies (libraries) that make up actual
-        # Chromium functionality directly into the executable.
-        ":browser_dependencies",
-        ":child_dependencies",
-
-        # For configuring PartitionAlloc
-        "//base/allocator:buildflags",
-
-        # For the sampling profiler.
-        "//chrome/common/profiler",
-
-        # Needed to use the master_preferences functions
-        "//chrome/installer/util:with_no_strings",
-        "//content/public/app",
-
-        # For headless mode.
-        "//headless:headless_shell_lib",
-      ]
-
-      public_deps = [
-        ":xdg_mime",  # Needs to be public for installer to consume files.
-        "//chrome/common:buildflags",
-      ]
-
-      ldflags = []
-
-      # Chrome OS debug builds for arm need to pass --long-plt to the linker.
-      # See https://bugs.chromium.org/p/chromium/issues/detail?id=583532
-      if (is_chromeos_ash && is_debug && target_cpu == "arm") {
-        ldflags += [ "-Wl,--long-plt" ]
+      if (use_cbe) {
+        configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
 
-      if ((is_linux || is_chromeos_lacros) && !is_component_build &&
-          !using_sanitizer) {
-        version_script = "//build/linux/chrome.map"
-        inputs = [ version_script ]
-        ldflags += [ "-Wl,--version-script=" +
-                     rebase_path(version_script, root_build_dir) ]
+      if (use_cbe && is_chrome_cbe) {
+        deps += ["//neva/cbe:chromium_cbe" ]
+      } else {
+        sources += [
+          "app/chrome_dll_resource.h",
+          "app/chrome_main.cc",
+          "app/chrome_main_delegate.cc",
+          "app/chrome_main_delegate.h",
+        ]
+
+        deps += [
+          # On Linux, link the dependencies (libraries) that make up actual
+          # Chromium functionality directly into the executable.
+          ":browser_dependencies",
+          ":child_dependencies",
+
+          # For configuring PartitionAlloc
+          "//base/allocator:buildflags",
+
+          # For the sampling profiler.
+          "//chrome/common/profiler",
+
+          # Needed to use the master_preferences functions
+          "//chrome/installer/util:with_no_strings",
+          "//content/public/app",
+
+          # For headless mode.
+          "//headless:headless_shell_lib",
+        ]
+
+        public_deps = [
+          ":xdg_mime",  # Needs to be public for installer to consume files.
+          "//chrome/common:buildflags",
+        ]
+
+        ldflags = []
+
+        # Chrome OS debug builds for arm need to pass --long-plt to the linker.
+        # See https://bugs.chromium.org/p/chromium/issues/detail?id=583532
+        if (is_chromeos_ash && is_debug && target_cpu == "arm") {
+          ldflags += [ "-Wl,--long-plt" ]
+        }
+
+        if ((is_linux || is_chromeos_lacros) && !is_component_build &&
+            !using_sanitizer) {
+          version_script = "//build/linux/chrome.map"
+          inputs = [ version_script ]
+          ldflags += [ "-Wl,--version-script=" +
+                       rebase_path(version_script, root_build_dir) ]
+        }
       }
     }
 

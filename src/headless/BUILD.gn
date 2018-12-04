@@ -787,8 +787,6 @@ static_library("headless_shell_lib") {
     sources += [
       "lib/browser/headless_content_browser_client.cc",
       "lib/browser/headless_content_browser_client.h",
-      "lib/utility/headless_content_utility_client.cc",
-      "lib/utility/headless_content_utility_client.h",
     ]
   }
 

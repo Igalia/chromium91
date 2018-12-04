@@ -82,7 +82,7 @@ ResourceBundle* g_shared_instance_ = nullptr;
 base::FilePath GetResourcesPakFilePath(const std::string& pak_name) {
   base::FilePath path;
 #if defined(USE_CBE)
-  if (base::PathService::Get(base::DIR_ASSETS, &path))
+  if (base::PathService::Get(base::DIR_EXE, &path))
 #else
   if (base::PathService::Get(base::DIR_MODULE, &path))
 #endif  // defined(USE_CBE)
