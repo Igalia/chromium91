@@ -60,6 +60,7 @@ copy("default_browser") {
 
   deps = [
     "//chrome",                             # for chrome, chrome_*.pack and resources.pak
+    "//chrome:xdg_mime",                    # product_logo_48
     "//v8:v8",                              # for snapshot_blob.bin and natives_blob.bin
     "//third_party/icu:icudata",            # for icudtl.dat
     "//headless:pak",                       # for headless_lib.pak
