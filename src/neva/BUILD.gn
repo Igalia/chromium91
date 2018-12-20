@@ -152,4 +152,8 @@ config("config") {
   if (use_local_storage_tracker) {
     defines += [ "USE_LOCAL_STORAGE_TRACKER=1" ]
   }
+
+  if (use_single_window_mode) {
+    defines += [ "USE_SINGLE_WINDOW_MODE" ]
+  }
 }
