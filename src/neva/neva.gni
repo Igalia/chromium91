@@ -112,4 +112,7 @@ declare_args() {
 
   # Suspend capturing audio/video when tab or app is suspended
   use_neva_suspend_media_capture = is_webos
+
+  # Support single window mode
+  use_single_window_mode = is_webos || is_webos_lite
 }
