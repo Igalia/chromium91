@@ -40,10 +40,30 @@ float WaylandOutput::GetUIScaleFactor() const {
              : scale_factor();
 }
 
-void WaylandOutput::TriggerDelegateNotifications() const {
+gfx::Rect WaylandOutput::GetBounds() const {
   DCHECK(!rect_in_physical_pixels_.IsEmpty());
-  delegate_->OnOutputHandleMetrics(output_id_, rect_in_physical_pixels_,
+  gfx::Rect transformed_rect = rect_in_physical_pixels_;
+  if (swap_axis_)
+    transformed_rect.Transpose();
+  return transformed_rect;
+}
+
+void WaylandOutput::TriggerDelegateNotifications() const {
+  delegate_->OnOutputHandleMetrics(output_id_, GetBounds(),
                                    scale_factor_);
+}
+
+// static
+bool WaylandOutput::ShouldSwapAxis(int32_t output_transform) {
+  switch(output_transform) {
+    case WL_OUTPUT_TRANSFORM_90:
+    case WL_OUTPUT_TRANSFORM_270:
+    case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+    case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+      return true;
+    default:
+     return false;
+  }
 }
 
 // static
@@ -58,8 +78,10 @@ void WaylandOutput::OutputHandleGeometry(void* data,
                                          const char* model,
                                          int32_t output_transform) {
   WaylandOutput* wayland_output = static_cast<WaylandOutput*>(data);
-  if (wayland_output)
+  if (wayland_output) {
     wayland_output->rect_in_physical_pixels_.set_origin(gfx::Point(x, y));
+    wayland_output->swap_axis_ = ShouldSwapAxis(output_transform);
+  }
 }
 
 // static

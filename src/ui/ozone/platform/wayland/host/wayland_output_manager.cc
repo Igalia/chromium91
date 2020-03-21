@@ -73,7 +73,7 @@ std::unique_ptr<WaylandScreen> WaylandOutputManager::CreateWaylandScreen() {
   for (const auto& output : output_list_) {
     if (output->is_ready()) {
       wayland_screen->OnOutputAddedOrUpdated(
-          output->output_id(), output->bounds(), output->scale_factor());
+          output->output_id(), output->GetBounds(), output->scale_factor());
     }
   }
 
