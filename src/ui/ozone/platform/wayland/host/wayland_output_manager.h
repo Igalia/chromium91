@@ -31,6 +31,8 @@ class WaylandOutputManager : public WaylandOutput::Delegate {
   // compositor.
   bool IsOutputReady() const;
 
+  WaylandOutput *GetPrimaryOutput();
+
   void AddWaylandOutput(const uint32_t output_id, wl_output* output);
   void RemoveWaylandOutput(const uint32_t output_id);
 
