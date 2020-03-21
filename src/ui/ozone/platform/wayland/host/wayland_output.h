@@ -48,8 +48,11 @@ class WaylandOutput {
   // global compositor space.
   bool is_ready() const { return !rect_in_physical_pixels_.IsEmpty(); }
 
+  gfx::Rect GetBounds() const;
+
  private:
   static constexpr int32_t kDefaultScaleFactor = 1;
+  static bool ShouldSwapAxis(int32_t wayland_transform);
 
   void TriggerDelegateNotifications() const;
 
@@ -81,6 +84,7 @@ class WaylandOutput {
   wl::Object<wl_output> output_;
   int32_t scale_factor_ = kDefaultScaleFactor;
   gfx::Rect rect_in_physical_pixels_;
+  bool swap_axis_ = false;
 
   Delegate* delegate_ = nullptr;
 
