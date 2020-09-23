@@ -15,7 +15,7 @@ enum class PaintEvent {
   kProvisionalFirstMeaningfulPaint,
   kFirstImagePaint,
   kPortalActivatedPaint,
-#if defined(OS_WEBOS)
+#if defined(USE_NEVA_APPRUNTIME)
   kFirstContainerResetPaint,
 #endif
 };
