@@ -13,7 +13,7 @@
 namespace viz {
 
 namespace {
-const int kActivateEventuallyTimeoutMs = 8000;
+const int kActivateEventuallyTimeoutMs = 300;
 }
 
 class DisplayScheduler::BeginFrameObserver : public BeginFrameObserverBase {
