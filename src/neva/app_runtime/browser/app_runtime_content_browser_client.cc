@@ -533,11 +533,13 @@ void AppRuntimeContentBrowserClient::SetCorsCorbDisabled(int process_id,
     return;
   }
 
+#if defined(OS_WEBOS)
   if (disabled) {
     GetNetworkService()->AddCorsCorbExceptionForProcess(process_id);
   } else {
     GetNetworkService()->RemoveCorsCorbExceptionForProcess(process_id);
   }
+#endif
 }
 
 }  // namespace neva_app_runtime

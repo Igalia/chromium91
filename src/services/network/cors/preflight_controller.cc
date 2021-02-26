@@ -20,13 +20,16 @@
 #include "services/network/public/cpp/constants.h"
 #include "services/network/public/cpp/cors/cors.h"
 #include "services/network/public/cpp/cors/cors_error_status.h"
-#include "services/network/public/cpp/neva/cors_corb_exception.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/network_service.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "url/gurl.h"
+
+#if defined(OS_WEBOS)
+#include "services/network/public/cpp/neva/cors_corb_exception.h"
+#endif
 
 namespace network {
 
@@ -300,11 +303,17 @@ class PreflightController::PreflightLoader final {
 
     FinalizeLoader();
 
+#if defined(OS_WEBOS)
+    bool allow_exception = neva::CorsCorbException::ShouldAllowExceptionForProcess(process_id_);
+#else
+    bool allow_exception = true;
+#endif
+
     base::Optional<CorsErrorStatus> detected_error_status;
     bool has_authorization_covered_by_wildcard = false;
     std::unique_ptr<PreflightResult> result = CreatePreflightResult(
         final_url, head, original_request_, tainted_, &detected_error_status,
-        neva::CorsCorbException::ShouldAllowExceptionForProcess(process_id_));
+        allow_exception);
 
     if (result) {
       // Preflight succeeded. Check |original_request_| with |result|.
@@ -312,11 +321,11 @@ class PreflightController::PreflightLoader final {
       detected_error_status =
           CheckPreflightResult(result.get(), original_request_,
                                with_non_wildcard_request_headers_support_);
-      if (detected_error_status &&
-          neva::CorsCorbException::ShouldAllowExceptionForProcess(
-              process_id_)) {
+#if defined(OS_WEBOS)
+      if (detected_error_status && allow_exception) {
         neva::CorsCorbException::ApplyException(detected_error_status);
       }
+#endif
       has_authorization_covered_by_wildcard =
           result->HasAuthorizationCoveredByWildcard(original_request_.headers);
     }

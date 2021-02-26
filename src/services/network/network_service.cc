@@ -652,6 +652,7 @@ void NetworkService::RemoveSecurityExceptionsForPlugin(int32_t process_id) {
   map.erase(process_id);
 }
 
+#if defined(OS_WEBOS)
 void NetworkService::AddCorsCorbExceptionForProcess(uint32_t process_id) {
   DCHECK_NE(mojom::kBrowserProcessId, process_id);
   neva::CorsCorbException::AddForProcess(process_id);
@@ -661,6 +662,7 @@ void NetworkService::RemoveCorsCorbExceptionForProcess(uint32_t process_id) {
   DCHECK_NE(mojom::kBrowserProcessId, process_id);
   neva::CorsCorbException::RemoveForProcess(process_id);
 }
+#endif
 
 bool NetworkService::IsInitiatorAllowedForPlugin(
     int process_id,

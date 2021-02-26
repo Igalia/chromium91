@@ -18,13 +18,15 @@
 #include "net/http/http_request_headers.h"
 #include "net/http/http_util.h"
 #include "services/network/public/cpp/is_potentially_trustworthy.h"
-#include "services/network/public/cpp/neva/cors_corb_exception.h"
 #include "services/network/public/cpp/request_mode.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 #include "url/url_constants.h"
 #include "url/url_util.h"
 
+#if defined(OS_WEBOS)
+#include "services/network/public/cpp/neva/cors_corb_exception.h"
+#endif
 // String conversion from blink::String to std::string for header name/value
 // should be latin-1, not utf-8, as per HTTP. Note that as we use ByteString
 // as the IDL types of header name/value, a character whose code point is
@@ -251,10 +253,12 @@ base::Optional<CorsErrorStatus> CheckAccess(
       CheckAccessInternal(response_url, allow_origin_header,
                           allow_credentials_header, credentials_mode, origin);
 
+#if defined(OS_WEBOS)
   // Replace error_status with nullopt for the cases that we want to allow cors
   // in non_strict_mode
   if (non_strict_mode && error_status)
     neva::CorsCorbException::ApplyException(error_status);
+#endif
 
   ReportAccessCheckResultMetric(error_status ? AccessCheckResult::kNotPermitted
                                              : AccessCheckResult::kPermitted,
@@ -300,10 +304,12 @@ base::Optional<CorsErrorStatus> CheckPreflightAccess(
                                           allow_credentials_header,
                                           actual_credentials_mode, origin);
 
+#if defined(OS_WEBOS)
   // Replace error_status with nullopt for the cases that we want to allow cors
   // in non_strict_mode
   if (non_strict_mode && error_status)
     neva::CorsCorbException::ApplyException(error_status);
+#endif
 
   const bool has_ok_status = IsOkStatus(response_status_code);
 
