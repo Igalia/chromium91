@@ -18,11 +18,14 @@
 #include "services/network/public/cpp/cors/origin_access_list.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/header_util.h"
-#include "services/network/public/cpp/neva/cors_corb_exception.h"
 #include "services/network/public/cpp/request_mode.h"
 #include "services/network/trust_tokens/trust_token_operation_metrics_recorder.h"
 #include "services/network/url_loader.h"
 #include "url/url_util.h"
+
+#if defined(OS_WEBOS)
+#include "services/network/public/cpp/neva/cors_corb_exception.h"
+#endif
 
 namespace network {
 
@@ -272,6 +275,11 @@ void CorsURLLoader::OnReceiveResponse(mojom::URLResponseHeadPtr response_head) {
       request_.is_revalidating && response_head->headers &&
       response_head->headers->response_code() == 304;
   if (fetch_cors_flag_ && !is_304_for_revalidation) {
+#if defined(OS_WEBOS)
+    bool allow_exception = neva::CorsCorbException::ShouldAllowExceptionForProcess(process_id_);
+#else
+    bool allow_exception = false;
+#endif
     const auto error_status = CheckAccess(
         request_.url,
         GetHeaderString(*response_head,
@@ -280,7 +288,7 @@ void CorsURLLoader::OnReceiveResponse(mojom::URLResponseHeadPtr response_head) {
                         header_names::kAccessControlAllowCredentials),
         request_.credentials_mode,
         tainted_ ? url::Origin() : *request_.request_initiator,
-        neva::CorsCorbException::ShouldAllowExceptionForProcess(process_id_));
+        allow_exception);
     if (error_status) {
       HandleComplete(URLLoaderCompletionStatus(*error_status));
       return;
@@ -312,6 +320,11 @@ void CorsURLLoader::OnReceiveRedirect(const net::RedirectInfo& redirect_info,
   // If |CORS flag| is set and a CORS check for |request| and |response| returns
   // failure, then return a network error.
   if (fetch_cors_flag_ && IsCorsEnabledRequestMode(request_.mode)) {
+#if defined(OS_WEBOS)
+    bool allow_exception = neva::CorsCorbException::ShouldAllowExceptionForProcess(process_id_);
+#else
+    bool allow_exception = false;
+#endif
     const auto error_status = CheckAccess(
         request_.url,
         GetHeaderString(*response_head,
@@ -320,7 +333,7 @@ void CorsURLLoader::OnReceiveRedirect(const net::RedirectInfo& redirect_info,
                         header_names::kAccessControlAllowCredentials),
         request_.credentials_mode,
         tainted_ ? url::Origin() : *request_.request_initiator,
-        neva::CorsCorbException::ShouldAllowExceptionForProcess(process_id_));
+        allow_exception);
     if (error_status) {
       HandleComplete(URLLoaderCompletionStatus(*error_status));
       return;

@@ -61,7 +61,6 @@
 #include "services/network/public/cpp/ip_address_space_util.h"
 #include "services/network/public/cpp/net_adapters.h"
 #include "services/network/public/cpp/network_switches.h"
-#include "services/network/public/cpp/neva/cors_corb_exception.h"
 #include "services/network/public/cpp/opaque_response_blocking.h"
 #include "services/network/public/cpp/origin_policy.h"
 #include "services/network/public/cpp/parsed_headers.h"
@@ -79,6 +78,10 @@
 #include "services/network/trust_tokens/trust_token_request_helper.h"
 #include "services/network/url_loader_factory.h"
 #include "url/origin.h"
+
+#if defined(OS_WEBOS)
+#include "services/network/public/cpp/neva/cors_corb_exception.h"
+#endif
 
 namespace network {
 
@@ -617,9 +620,11 @@ URLLoader::URLLoader(
   url_request_->set_accepted_stream_types(
       request.devtools_accepted_stream_types);
 
+#if defined(OS_WEBOS)
   if (neva::CorsCorbException::ShouldAllowExceptionForProcess(GetProcessId())) {
     is_nocors_corb_excluded_request_ = true;
   }
+#endif
 
   if (request.trusted_params) {
     has_user_activation_ = request.trusted_params->has_user_activation;
