@@ -145,7 +145,7 @@ copy("locales") {
 copy("headers") {
   sources = headers
 
-  outputs = [ "$image_path/$includedir/webruntime/{{source_root_relative_dir}}/{{source_file_part}}" ]
+  outputs = [ "$image_path/$includedir/chromium/{{source_root_relative_dir}}/{{source_file_part}}" ]
 }
 
 copy("logging_buildflags_header") {
@@ -153,7 +153,7 @@ copy("logging_buildflags_header") {
   outputs = []
 
   foreach(file, rebase_path(sources, root_gen_dir)) {
-    outputs += [ "$image_path/$includedir/webruntime/" + file ]
+    outputs += [ "$image_path/$includedir/chromium/" + file ]
   }
   deps = generated_headers_deps
 }
@@ -163,7 +163,7 @@ copy("debugging_buildflags_header") {
   outputs = []
 
   foreach(file, rebase_path(sources, root_gen_dir)) {
-    outputs += [ "$image_path/$includedir/webruntime/" + file ]
+    outputs += [ "$image_path/$includedir/chromium/" + file ]
   }
   deps = generated_headers_deps
 }
