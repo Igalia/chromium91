@@ -33,7 +33,6 @@ grit("webui_test_resources") {
 
 mojom("web_ui_test_bindings") {
   sources = [
-    "webui/mojo/foobar.mojom",
     "webui/web_ui_test.mojom",
   ]
   webui_module_path = "/"
