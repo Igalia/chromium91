@@ -26,7 +26,7 @@ declare_args() {
   app_shell_exe = "$app_shell_dir/app_shell"
 
   browser_app = "com.webos.app.browser"
-  browser_dir = "/usr/palm/applications/com.webos.app.browser"
+  browser_dir = "/opt/chromium"
   browser_exe = "$app_shell_dir/chrome"
 
   chromedriver_app = "chromedriver"
