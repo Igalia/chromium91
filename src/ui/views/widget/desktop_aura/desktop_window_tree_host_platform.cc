@@ -826,6 +826,27 @@ void DesktopWindowTreeHostPlatform::OnInputPanelRectChanged(
     delegate->InputPanelRectChanged(x, y, width, height);
 #endif  // defined(USE_NEVA_APPRUNTIME)
 }
+
+void DesktopWindowTreeHostPlatform::BeginPrepareStackForWebApp() {
+#if defined(USE_NEVA_APPRUNTIME)
+  // Hide compositor
+  if (compositor()) {
+    compositor()->SetDisplayVisibilityEnabled(false);
+    compositor()->SetVisible(false);
+  }
+  // But kick scheduling loop to prepare ui stack
+  GetContentWindow()->Show();
+#endif  // defined(USE_NEVA_APPRUNTIME)
+}
+
+void DesktopWindowTreeHostPlatform::FinishPrepareStackForWebApp() {
+#if defined(USE_NEVA_APPRUNTIME)
+  if (compositor()) {
+    compositor()->SetDisplayVisibilityEnabled(true);
+    compositor()->SetVisible(true);
+  }
+#endif  // defined(USE_NEVA_APPRUNTIME)
+}
 ///@}
 
 void DesktopWindowTreeHostPlatform::OnWindowStateChanged(
