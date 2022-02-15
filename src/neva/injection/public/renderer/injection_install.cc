@@ -40,6 +40,10 @@
 #include "neva/injection/public/renderer/memorymanager_webapi.h"
 #endif  // defined(ENABLE_MEMORYMANAGER_WEBAPI)
 
+#if defined(ENABLE_AGL_APPSERVICE_WEBAPI)
+#include "neva/injection/public/renderer/agl_appservice_webapi.h"
+#endif  // defined(ENABLE_AGL_APPSERVICE_WEBAPI)
+
 namespace injections {
 
 bool GetInjectionInstallAPI(const std::string& name, InstallAPI* api) {
@@ -86,6 +90,13 @@ bool GetInjectionInstallAPI(const std::string& name, InstallAPI* api) {
   if (name == webapi::kBrowserControl) {
     api->install_func = BrowserControlWebAPI::Install;
     api->uninstall_func = BrowserControlWebAPI::Uninstall;
+    return true;
+  }
+#endif
+#if defined(ENABLE_AGL_APPSERVICE_WEBAPI)
+  if (name == webapi::kAGLAppService) {
+    api->install_func = AGLAppServiceWebAPI::Install;
+    api->uninstall_func = AGLAppServiceWebAPI::Uninstall;
     return true;
   }
 #endif

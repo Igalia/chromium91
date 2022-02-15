@@ -23,6 +23,7 @@ namespace injections {
 
 namespace webapi {
 
+COMPONENT_EXPORT(INJECTION) extern const char kAGLAppService[];
 COMPONENT_EXPORT(INJECTION) extern const char kBrowserControl[];
 COMPONENT_EXPORT(INJECTION) extern const char kMemoryManager[];
 COMPONENT_EXPORT(INJECTION) extern const char kNetworkErrorPage[];

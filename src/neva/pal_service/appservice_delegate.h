@@ -1,4 +1,4 @@
-// Copyright 2020 LG Electronics, Inc.
+// Copyright 2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,17 +14,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-module pal.mojom;
+#ifndef NEVA_PAL_SERVICE_APPSERVICE_DELEGATE_H_
+#define NEVA_PAL_SERVICE_APPSERVICE_DELEGATE_H_
 
-import "neva/pal_service/public/mojom/appservice.mojom";
-import "neva/pal_service/public/mojom/memorymanager.mojom";
-import "neva/pal_service/public/mojom/sample.mojom";
-import "neva/pal_service/public/mojom/system_servicebridge.mojom";
+#include <string>
+#include "base/callback.h"
 
-interface PalService {
-  BindAppService(pending_receiver<AppService> receiver);
-  BindMemoryManager(pending_receiver<MemoryManager> receiver);
-  BindSample(pending_receiver<Sample> receiver);
-  BindSystemServiceBridgeProvider(
-      pending_receiver<SystemServiceBridgeProvider> receiver);
+namespace pal {
+
+class AppServiceDelegate {
+ public:
+  virtual ~AppServiceDelegate() {}
+
+  using OnceResponse = base::OnceCallback<void(const std::string&)>;
+  virtual void Start(const std::string& application_id) = 0;
+  virtual void GetApplications(bool graphical_only, OnceResponse callback) = 0;
 };
+
+}  // namespace pal
+
+#endif  // NEVA_PAL_SERVICE_MEMORYMANAGER_DELEGATE_H_

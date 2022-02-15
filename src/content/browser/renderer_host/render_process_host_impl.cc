@@ -266,6 +266,7 @@
 #if defined(USE_NEVA_APPRUNTIME)
 #include "content/public/common/content_neva_switches.h"
 #include "neva/pal_service/pal_service.h"
+#include "neva/pal_service/public/mojom/appservice.mojom.h"
 #include "neva/pal_service/public/mojom/memorymanager.mojom.h"
 #include "neva/pal_service/public/mojom/os_crypt.mojom.h"
 #include "neva/pal_service/public/mojom/sample.mojom.h"
@@ -2262,6 +2263,12 @@ void RenderProcessHostImpl::RegisterMojoInterfaces() {
   VLOG(1) << __func__;
 
 #if defined(USE_NEVA_APPRUNTIME)
+  AddUIThreadInterface(
+      registry.get(),
+      base::BindRepeating(
+          [](mojo::PendingReceiver<pal::mojom::AppService> receiver) {
+            pal::GetPalService().BindAppService(std::move(receiver));
+          }));
   AddUIThreadInterface(
       registry.get(),
       base::BindRepeating(

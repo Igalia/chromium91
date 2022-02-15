@@ -1,4 +1,4 @@
-// Copyright 2020 LG Electronics, Inc.
+// Copyright 2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,17 +14,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-module pal.mojom;
+#include "neva/injection/public/renderer/agl_appservice_webapi.h"
 
-import "neva/pal_service/public/mojom/appservice.mojom";
-import "neva/pal_service/public/mojom/memorymanager.mojom";
-import "neva/pal_service/public/mojom/sample.mojom";
-import "neva/pal_service/public/mojom/system_servicebridge.mojom";
+#include "neva/injection/renderer/agl_appservice/agl_appservice_injection.h"
 
-interface PalService {
-  BindAppService(pending_receiver<AppService> receiver);
-  BindMemoryManager(pending_receiver<MemoryManager> receiver);
-  BindSample(pending_receiver<Sample> receiver);
-  BindSystemServiceBridgeProvider(
-      pending_receiver<SystemServiceBridgeProvider> receiver);
-};
+namespace injections {
+
+// static
+void AGLAppServiceWebAPI::Install(blink::WebLocalFrame* frame) {
+  AGLAppServiceInjection::Install(frame);
+}
+
+void AGLAppServiceWebAPI::Uninstall(blink::WebLocalFrame* frame) {
+  AGLAppServiceInjection::Uninstall(frame);
+}
+
+}  // namespace injections

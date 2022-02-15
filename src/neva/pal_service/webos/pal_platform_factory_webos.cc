@@ -76,4 +76,9 @@ PlatformFactory::CreatePlatformSystemDelegate() {
 #endif
 }
 
+std::unique_ptr<AppServiceDelegate>
+PlatformFactory::CreateAppServiceDelegate() {
+  return std::unique_ptr<AppServiceDelegate>();
+}
+
 }  // namespace pal

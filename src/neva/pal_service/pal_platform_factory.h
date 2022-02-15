@@ -27,6 +27,7 @@
 
 namespace pal {
 
+class AppServiceDelegate;
 class MemoryManagerDelegate;
 class OSCryptDelegate;
 class PlatformSystemDelegate;
@@ -44,6 +45,8 @@ class COMPONENT_EXPORT(PAL_SERVICE) PlatformFactory {
   std::unique_ptr<LanguageTrackerDelegate> CreateLanguageTrackerDelegate(
       const std::string& application_name,
       LanguageTrackerDelegate::RepeatingResponse callback);
+
+  std::unique_ptr<AppServiceDelegate> CreateAppServiceDelegate();
 
   std::unique_ptr<MemoryManagerDelegate> CreateMemoryManagerDelegate();
 

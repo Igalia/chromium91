@@ -43,6 +43,9 @@ std::set<std::string> allowed_injections = {
 #if defined(ENABLE_MEMORYMANAGER_WEBAPI)
     std::string(injections::webapi::kMemoryManager),
 #endif
+#if defined(ENABLE_AGL_APPSERVICE_WEBAPI)
+    std::string(injections::webapi::kAGLAppService),
+#endif
 };
 
 }  // namespace

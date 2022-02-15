@@ -115,4 +115,7 @@ declare_args() {
 
   # Support single window mode
   use_single_window_mode = is_webos || is_webos_lite
+
+  # Enable AGL application service WEBAPI
+  enable_agl_appservice_webapi = is_agl
 }

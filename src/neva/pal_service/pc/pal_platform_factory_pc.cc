@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include "neva/pal_service/appservice_delegate.h"
 #include "neva/pal_service/dummy/platform_system_delegate_dummy.h"
 #include "neva/pal_service/os_crypt_delegate.h"
 #include "neva/pal_service/public/application_registrator_delegate.h"
@@ -60,6 +61,11 @@ PlatformFactory::CreateSystemServiceBridgeDelegate(
 std::unique_ptr<PlatformSystemDelegate>
 PlatformFactory::CreatePlatformSystemDelegate() {
   return std::make_unique<dummy::PlatformSystemDelegateDummy>();
+}
+
+std::unique_ptr<AppServiceDelegate>
+PlatformFactory::CreateAppServiceDelegate() {
+  return std::unique_ptr<AppServiceDelegate>();
 }
 
 }  // namespace pal

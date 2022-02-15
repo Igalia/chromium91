@@ -55,6 +55,13 @@ source_set("renderer") {
     ]
   }
 
+  if (enable_agl_appservice_webapi) {
+    sources += [
+      "agl_appservice/agl_appservice_injection.cc",
+      "agl_appservice/agl_appservice_injection.h",
+    ]
+  }
+
   if (is_webos) {
     libs = ["luna-service2"]
     configs += ["//build/config/linux:glib"]
