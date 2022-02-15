@@ -20,6 +20,7 @@ namespace injections {
 
 namespace webapi {
 
+const char kAGLAppService[] = "v8/agl_appservice";
 const char kBrowserControl[] = "v8/browser_control";
 const char kCookieManager[] = "v8/cookiemanager";
 const char kMemoryManager[] = "v8/memorymanager";

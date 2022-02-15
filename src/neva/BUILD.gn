@@ -156,4 +156,9 @@ config("config") {
   if (use_single_window_mode) {
     defines += [ "USE_SINGLE_WINDOW_MODE" ]
   }
+
+  if (enable_agl_appservice_webapi) {
+    defines += [ "ENABLE_AGL_APPSERVICE_WEBAPI=1" ]
+  }
+
 }

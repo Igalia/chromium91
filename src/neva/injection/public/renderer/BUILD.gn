@@ -49,6 +49,13 @@ source_set("renderer") {
     ]
   }
 
+  if (enable_agl_appservice_webapi) {
+    sources += [
+      "agl_appservice_webapi.cc",
+      "agl_appservice_webapi.h",
+    ]
+  }
+
   if (is_webos) {
     sources += [
       "webossystem_webapi.cc",

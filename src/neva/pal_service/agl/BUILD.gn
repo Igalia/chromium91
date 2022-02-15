@@ -18,6 +18,8 @@ import("//neva/pal_service/pal_service.gni")
 
 source_set("pal_service_agl") {
   sources = [
+    "appservice_delegate_agl.cc",
+    "appservice_delegate_agl.h",
     "pal_platform_factory_agl.cc",
   ]
 

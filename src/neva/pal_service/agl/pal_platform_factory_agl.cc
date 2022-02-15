@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include "neva/pal_service/agl/appservice_delegate_agl.h"
 #include "neva/pal_service/dummy/platform_system_delegate_dummy.h"
 #include "neva/pal_service/dummy/system_servicebridge_delegate_dummy.h"
 #include "neva/pal_service/os_crypt_delegate.h"
@@ -27,6 +28,11 @@
 #include "neva/pal_service/public/network_error_page_controller_delegate.h"
 
 namespace pal {
+
+std::unique_ptr<AppServiceDelegate>
+PlatformFactory::CreateAppServiceDelegate() {
+  return std::make_unique<agl::AppServiceDelegateAGL>();
+}
 
 std::unique_ptr<ApplicationRegistratorDelegate>
 PlatformFactory::CreateApplicationRegistratorDelegate(

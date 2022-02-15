@@ -32,7 +32,9 @@
 #include "neva/pal_service/browser/cookiemanager_service_impl.h"
 #include "neva/pal_service/browser/popupblocker_service_impl.h"
 #include "neva/pal_service/browser/sitefilter_service_impl.h"
+#include "neva/pal_service/appservice.h"
 #include "neva/pal_service/memorymanager.h"
+#include "neva/pal_service/public/mojom/appservice.mojom.h"
 #include "neva/pal_service/public/mojom/memorymanager.mojom.h"
 #include "neva/pal_service/public/mojom/sample.mojom.h"
 #include "neva/pal_service/public/mojom/system_servicebridge.mojom.h"
@@ -47,6 +49,8 @@ class PalServiceImpl : public mojom::PalService {
   ~PalServiceImpl() override;
 
  private:
+  void BindAppService(
+      mojo::PendingReceiver<mojom::AppService> receiver) override;
   void BindCookieManagerService(
       mojo::PendingReceiver<mojom::CookieManagerService> receiver) override;
   void BindMemoryManager(
@@ -60,6 +64,7 @@ class PalServiceImpl : public mojom::PalService {
   void BindSiteFilterService(
       mojo::PendingReceiver<mojom::SiteFilterService> receiver) override;
 
+  std::unique_ptr<pal::AppServiceImpl> appservice_impl_;
   std::unique_ptr<pal::MemoryManagerImpl> memorymanager_impl_;
   std::unique_ptr<pal::SampleImpl> sample_impl_;
   std::unique_ptr<pal::SystemServiceBridgeProviderImpl>
@@ -74,6 +79,13 @@ PalServiceImpl::PalServiceImpl(
 }
 
 PalServiceImpl::~PalServiceImpl() {
+}
+
+void PalServiceImpl::BindAppService(
+    mojo::PendingReceiver<mojom::AppService> receiver) {
+  if (!appservice_impl_)
+    appservice_impl_ = std::make_unique<AppServiceImpl>();
+  appservice_impl_->AddBinding(std::move(receiver));
 }
 
 void PalServiceImpl::BindMemoryManager(
