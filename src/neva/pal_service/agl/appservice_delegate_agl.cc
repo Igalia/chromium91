@@ -16,24 +16,138 @@
 
 #include "neva/pal_service/agl/appservice_delegate_agl.h"
 
+#include "base/callback_helpers.h"
+#include "base/json/json_writer.h"
 #include "base/logging.h"
+#include "base/no_destructor.h"
+#include "base/values.h"
+#include "components/dbus/thread_linux/dbus_thread_linux.h"
+#include "dbus/bus.h"
+#include "dbus/message.h"
+#include "dbus/object_proxy.h"
+#include "dbus/values_util.h"
 
 namespace pal {
 namespace agl {
 
+namespace {
+
+const char kAutomotiveLinuxAppLaunchName[] = "org.automotivelinux.AppLaunch";
+const char kAutomotiveLinuxAppLaunchPath[] = "/org/automotivelinux/AppLaunch";
+const char kMethodStart[] = "start";
+const char kMethodListApplications[] = "listApplications";
 const char kDefaultGetApplicationsResponse[] = "{}";
+
+class AppLaunchHelper {
+ public:
+  using OnceResponse = base::OnceCallback<void(const std::string&)>;
+
+  AppLaunchHelper() = default;
+  AppLaunchHelper(const AppLaunchHelper&) = delete;
+  AppLaunchHelper& operator=(const AppLaunchHelper&) = delete;
+
+  static AppLaunchHelper& GetInstance() {
+    static base::NoDestructor<AppLaunchHelper> instance;
+    return *instance;
+  }
+
+  void Start(const std::string& application_id) {
+    EnsureProxy();
+
+    dbus::MethodCall method_call(kAutomotiveLinuxAppLaunchName, kMethodStart);
+    dbus::MessageWriter writer(&method_call);
+
+    writer.AppendString(application_id);
+
+    applaunch_proxy_->CallMethod(&method_call,
+                                 dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+                                 base::DoNothing());
+  }
+
+  void GetApplications(bool only_graphical, OnceResponse callback) {
+    EnsureProxy();
+
+    dbus::MethodCall method_call(kAutomotiveLinuxAppLaunchName,
+                                 kMethodListApplications);
+    dbus::MessageWriter writer(&method_call);
+
+    writer.AppendBool(only_graphical);
+
+    applaunch_proxy_->CallMethod(
+        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+        base::BindOnce(&AppLaunchHelper::OnListApplicationsResponse,
+                       weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
+  }
+
+ private:
+  void EnsureProxy() {
+    if (!bus_) {
+      dbus::Bus::Options bus_options;
+      bus_options.bus_type = dbus::Bus::SESSION;
+      bus_options.connection_type = dbus::Bus::PRIVATE;
+      bus_options.dbus_task_runner = dbus_thread_linux::GetTaskRunner();
+      bus_ = base::MakeRefCounted<dbus::Bus>(bus_options);
+    }
+
+    if (!applaunch_proxy_) {
+      applaunch_proxy_ =
+          bus_->GetObjectProxy(kAutomotiveLinuxAppLaunchName,
+                               dbus::ObjectPath(kAutomotiveLinuxAppLaunchPath));
+    }
+  }
+
+  void ReturnEmptyListApplications(OnceResponse callback) {
+    std::move(callback).Run(kDefaultGetApplicationsResponse);
+  }
+
+  void OnListApplicationsResponse(OnceResponse callback,
+                                  dbus::Response* response) {
+    if (!response) {
+      LOG(ERROR) << __func__
+                 << " failed to get a DBus response from ListApplications";
+      ReturnEmptyListApplications(std::move(callback));
+      return;
+    }
+
+    dbus::MessageReader reader(response);
+    std::unique_ptr<base::Value> response_value = dbus::PopDataAsValue(&reader);
+    if (!response_value) {
+      LOG(ERROR) << __func__ << " failed to retrieve listApplications response";
+      ReturnEmptyListApplications(std::move(callback));
+      return;
+    }
+
+    std::string response_string;
+    if (!base::JSONWriter::Write(*response_value, &response_string)) {
+      LOG(ERROR) << __func__
+                 << " failed to generate the JSON string of the response";
+      ReturnEmptyListApplications(std::move(callback));
+      return;
+    }
+    std::move(callback).Run(response_string);
+  }
+
+  scoped_refptr<dbus::Bus> bus_;
+  dbus::ObjectProxy* applaunch_proxy_ = nullptr;
+
+  base::WeakPtrFactory<AppLaunchHelper> weak_ptr_factory_{this};
+};
+
+}  // namespace
 
 AppServiceDelegateAGL::AppServiceDelegateAGL() = default;
 AppServiceDelegateAGL::~AppServiceDelegateAGL() = default;
 
 void AppServiceDelegateAGL::Start(const std::string& application_id) {
-  LOG(ERROR) << __func__ << " application_id=" << application_id;
+  VLOG(1) << __func__ << " application_id=" << application_id;
+  AppLaunchHelper::GetInstance().Start(application_id);
 }
 
 void AppServiceDelegateAGL::GetApplications(bool graphical_only,
                                             OnceResponse callback) {
-  LOG(ERROR) << __func__ << " graphical_only=" << graphical_only;
-  std::move(callback).Run(kDefaultGetApplicationsResponse);
+  VLOG(1) << __func__ << " graphical_only=" << graphical_only;
+  AppLaunchHelper::GetInstance().GetApplications(graphical_only,
+                                                 std::move(callback));
 }
 
 }  // namespace agl

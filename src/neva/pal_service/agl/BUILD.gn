@@ -14,7 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import("//build/config/features.gni")
 import("//neva/pal_service/pal_service.gni")
+
+assert(use_dbus)
 
 source_set("pal_service_agl") {
   sources = [
@@ -30,6 +33,8 @@ source_set("pal_service_agl") {
   # with "//neva/pal_service/agl:pal_service_agl".
   deps = [
     "//base",
+    "//dbus",
+    "//components/dbus/thread_linux",
     "//neva/pal_service/dummy:pal_service_dummy",
     "//neva/pal_service/public/mojom",
   ]

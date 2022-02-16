@@ -64,11 +64,13 @@ void AGLAppServiceInjection::Start(gin::Arguments* args) {
 }
 
 void AGLAppServiceInjection::GetApplications(gin::Arguments* args) {
-  bool only_graphical;
-  if (!args->GetNext(&only_graphical)) {
+  v8::Local<v8::Value> only_graphical_value;
+  if (!args->GetNext(&only_graphical_value) || only_graphical_value.IsEmpty()) {
     args->ThrowError();
     return;
   }
+  bool only_graphical = only_graphical_value->IsTrue();
+
   v8::Local<v8::Function> local_func;
   if (!args->GetNext(&local_func)) {
     args->ThrowError();
