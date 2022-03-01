@@ -52,7 +52,7 @@ bool WaylandExtensionsAglImpl::Bind(wl_registry* registry,
                                     const char* interface,
                                     uint32_t version) {
   bool should_use_agl_shell =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kUseAglShell);
+      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAglShellAppId);
 
   if (should_use_agl_shell && !agl_shell_ && (strcmp(interface, "agl_shell") == 0)) {
     wl::Object<agl_shell> aglshell =

@@ -191,6 +191,7 @@ class WebAppWindow : public views::NativeEventDelegate,
   void ShiftContentByY(int shift_height);
   void UpdateViewportYCallback();
   void RestoreContentByY();
+  void AglApplicationStarted(const std::string& application_id);
 
   views::Widget* widget_ = nullptr;
   views::WebView* webview_ = nullptr;
@@ -224,6 +225,9 @@ class WebAppWindow : public views::NativeEventDelegate,
 
   std::unique_ptr<wm::CursorManager> cursor_manager_;
   std::unique_ptr<WebAppScrollObserver> web_app_scroll_observer_;
+  std::unique_ptr<pal::AppServiceDelegate> app_service_delegate_;
+
+  base::WeakPtrFactory<WebAppWindow> weak_factory_{this};
 };
 
 }  // namespace neva_app_runtime

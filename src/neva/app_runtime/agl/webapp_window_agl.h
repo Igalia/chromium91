@@ -19,6 +19,9 @@
 
 #include <string>
 
+#include "base/memory/weak_ptr.h"
+#include "neva/pal_service/appservice_delegate.h"
+
 namespace neva_app_runtime {
 
 class WebAppWindow;
@@ -40,7 +43,12 @@ class WebAppWindowAgl {
   void SetAglPanel(uint32_t edge);
 
  private:
+  void ApplicationStarted(const std::string& application_id);
+
   WebAppWindow* webapp_window_;
+  std::unique_ptr<pal::AppServiceDelegate> app_service_delegate_;
+
+  base::WeakPtrFactory<WebAppWindowAgl> weak_factory_{this};
 };
 
 }  // namespace agl

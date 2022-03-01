@@ -35,6 +35,9 @@ class AppServiceDelegateAGL : public AppServiceDelegate {
 
   void Start(const std::string& application_id) override;
   void GetApplications(bool graphical_only, OnceResponse callback) override;
+  void SubscribeToApplicationStarted(RepeatingResponse callback) override;
+  void UnsubscribeFromApplicationStarted() override;
+  bool IsSubscribed() const override;
 };
 
 }  // namespace agl
