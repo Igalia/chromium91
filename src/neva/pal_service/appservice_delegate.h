@@ -29,6 +29,13 @@ class AppServiceDelegate {
   using OnceResponse = base::OnceCallback<void(const std::string&)>;
   virtual void Start(const std::string& application_id) = 0;
   virtual void GetApplications(bool graphical_only, OnceResponse callback) = 0;
+
+  using RepeatingResponse = base::RepeatingCallback<void(const std::string&)>;
+  virtual void SubscribeToApplicationStarted(RepeatingResponse callback) = 0;
+
+  virtual void UnsubscribeFromApplicationStarted() = 0;
+
+  virtual bool IsSubscribed() const = 0;
 };
 
 }  // namespace pal

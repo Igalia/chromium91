@@ -26,7 +26,7 @@ namespace switches {
 COMPONENT_EXPORT(UI_BASE) extern const char kEnableNevaIme[];
 COMPONENT_EXPORT(UI_BASE) extern const char kUseOzoneWaylandVkb[];
 COMPONENT_EXPORT(UI_BASE) extern const char kOzoneWaylandUseXDGShell[];
-COMPONENT_EXPORT(UI_BASE) extern const char kUseAglShell[];
+COMPONENT_EXPORT(UI_BASE) extern const char kAglShellAppId[];
 
 }  // namespace switches
 

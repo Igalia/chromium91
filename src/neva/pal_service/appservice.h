@@ -39,10 +39,14 @@ class AppServiceImpl : public mojom::AppService {
   void Start(const std::string& application_id) override;
   void GetApplications(bool graphical_only,
                        GetApplicationsCallback callback) override;
+  void Subscribe(SubscribeCallback callback) override;
 
  private:
+  void OnApplicationStarted(const std::string& application_id);
+
   std::unique_ptr<AppServiceDelegate> delegate_;
   mojo::ReceiverSet<mojom::AppService> receivers_;
+  mojo::AssociatedRemoteSet<mojom::AppServiceListener> listeners_;
   base::WeakPtrFactory<AppServiceImpl> weak_factory_;
 };
 

@@ -26,6 +26,6 @@ const char kOzoneWaylandUseXDGShell[] = "ozone-wayland-use-xdg-shell";
 // Use agl_shell wayland compositor interface. It seems like AGL compositor
 // supports the only client to bind to it and throws error on subsequent
 // attempts, so use of agl_shell is disabled by default.
-const char kUseAglShell[] = "use-agl-shell";
+const char kAglShellAppId[] = "agl-shell-appid";
 
 }  // namespace switches

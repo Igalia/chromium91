@@ -16,8 +16,13 @@
 
 #include "neva/app_runtime/agl/webapp_window_agl.h"
 
+#include "base/command_line.h"
 #include "neva/app_runtime/webapp_window.h"
+#include "neva/pal_service/pal_platform_factory.h"
+#include "third_party/blink/public/common/thread_safe_browser_interface_broker_proxy.h"
+#include "third_party/blink/public/platform/platform.h"
 #include "ui/aura/window_tree_host.h"
+#include "ui/base/ui_base_neva_switches.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 
 namespace neva_app_runtime {
@@ -33,9 +38,26 @@ void WebAppWindowAgl::SetAglActivateApp(const std::string& app) {
 }
 
 void WebAppWindowAgl::SetAglAppId(const std::string& title) {
+  std::string agl_shell_app_id =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kAglShellAppId);
+  if (title == agl_shell_app_id) {
+    app_service_delegate_ =
+        pal::PlatformFactory::Get()->CreateAppServiceDelegate();
+    if (app_service_delegate_) {
+      app_service_delegate_->SubscribeToApplicationStarted(base::BindRepeating(
+          &WebAppWindowAgl::ApplicationStarted, weak_factory_.GetWeakPtr()));
+    }
+  }
+
   auto host = webapp_window_->GetDesktopWindowTreeHost();
   if (host)
     host->AsWindowTreeHost()->SetAglAppId(title);
+}
+
+void WebAppWindowAgl::ApplicationStarted(const std::string& application_id) {
+  LOG(ERROR) << __func__ << " app_id=" << application_id;
+  SetAglActivateApp(application_id);
 }
 
 void WebAppWindowAgl::SetAglBackground() {

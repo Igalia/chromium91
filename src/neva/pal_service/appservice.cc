@@ -46,4 +46,27 @@ void AppServiceImpl::Start(const std::string& application_id) {
     delegate_->Start(application_id);
 }
 
+void AppServiceImpl::Subscribe(SubscribeCallback callback) {
+  if (!delegate_)
+    return;
+
+  if (listeners_.empty()) {
+    delegate_->SubscribeToApplicationStarted(base::BindRepeating(
+        &AppServiceImpl::OnApplicationStarted, weak_factory_.GetWeakPtr()));
+  }
+
+  mojo::AssociatedRemote<mojom::AppServiceListener> listener;
+  std::move(callback).Run(listener.BindNewEndpointAndPassReceiver());
+  listeners_.Add(std::move(listener));
+}
+
+void AppServiceImpl::OnApplicationStarted(const std::string& application_id) {
+  if (listeners_.empty()) {
+    delegate_->UnsubscribeFromApplicationStarted();
+  } else {
+    for (auto& listener : listeners_)
+      listener->ApplicationStarted(application_id);
+  }
+}
+
 }  // namespace pal

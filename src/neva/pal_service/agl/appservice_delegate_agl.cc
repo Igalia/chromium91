@@ -36,11 +36,13 @@ const char kAutomotiveLinuxAppLaunchName[] = "org.automotivelinux.AppLaunch";
 const char kAutomotiveLinuxAppLaunchPath[] = "/org/automotivelinux/AppLaunch";
 const char kMethodStart[] = "start";
 const char kMethodListApplications[] = "listApplications";
+const char kSignalStarted[] = "started";
 const char kDefaultGetApplicationsResponse[] = "{}";
 
 class AppLaunchHelper {
  public:
   using OnceResponse = base::OnceCallback<void(const std::string&)>;
+  using RepeatingCallback = base::RepeatingCallback<void(const std::string&)>;
 
   AppLaunchHelper() = default;
   AppLaunchHelper(const AppLaunchHelper&) = delete;
@@ -79,6 +81,15 @@ class AppLaunchHelper {
                        weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
   }
 
+  void SubscribeToApplicationStarted(RepeatingCallback callback) {
+    subscription_callback_ = std::move(callback);
+    subscribed_ = true;
+  }
+
+  void UnsubscribeFromApplicationStarted() { subscribed_ = false; }
+
+  bool IsSubscribed() const { return subscribed_; }
+
  private:
   void EnsureProxy() {
     if (!bus_) {
@@ -93,6 +104,12 @@ class AppLaunchHelper {
       applaunch_proxy_ =
           bus_->GetObjectProxy(kAutomotiveLinuxAppLaunchName,
                                dbus::ObjectPath(kAutomotiveLinuxAppLaunchPath));
+      applaunch_proxy_->ConnectToSignal(
+          kAutomotiveLinuxAppLaunchName, kSignalStarted,
+          base::BindRepeating(&AppLaunchHelper::OnStarted,
+                              weak_ptr_factory_.GetWeakPtr()),
+          base::BindOnce(&AppLaunchHelper::OnSignalConnected,
+                         weak_ptr_factory_.GetWeakPtr()));
     }
   }
 
@@ -127,8 +144,31 @@ class AppLaunchHelper {
     std::move(callback).Run(response_string);
   }
 
+  void OnStarted(dbus::Signal* signal) {
+    if (!subscribed_)
+      return;
+
+    dbus::MessageReader reader(signal);
+    std::string application_id;
+    if (!reader.PopString(&application_id)) {
+      LOG(ERROR) << __func__ << "no application id on signal "
+                 << signal->ToString();
+      return;
+    }
+    subscription_callback_.Run(application_id);
+  }
+
+  void OnSignalConnected(const std::string& interface,
+                         const std::string& signal,
+                         bool succeeded) {
+    LOG_IF(ERROR, !succeeded)
+        << "Connect to " << interface << " " << signal << " failed.";
+  }
+
   scoped_refptr<dbus::Bus> bus_;
   dbus::ObjectProxy* applaunch_proxy_ = nullptr;
+  RepeatingCallback subscription_callback_;
+  bool subscribed_ = false;
 
   base::WeakPtrFactory<AppLaunchHelper> weak_ptr_factory_{this};
 };
@@ -148,6 +188,22 @@ void AppServiceDelegateAGL::GetApplications(bool graphical_only,
   VLOG(1) << __func__ << " graphical_only=" << graphical_only;
   AppLaunchHelper::GetInstance().GetApplications(graphical_only,
                                                  std::move(callback));
+}
+
+void AppServiceDelegateAGL::SubscribeToApplicationStarted(
+    RepeatingResponse callback) {
+  VLOG(1) << __func__;
+  AppLaunchHelper::GetInstance().SubscribeToApplicationStarted(
+      std::move(callback));
+}
+
+void AppServiceDelegateAGL::UnsubscribeFromApplicationStarted() {
+  VLOG(1) << __func__;
+  AppLaunchHelper::GetInstance().UnsubscribeFromApplicationStarted();
+}
+
+bool AppServiceDelegateAGL::IsSubscribed() const {
+  return AppLaunchHelper::GetInstance().IsSubscribed();
 }
 
 }  // namespace agl
