@@ -30,7 +30,6 @@
 #include "chrome/browser/policy/homepage_location_policy_handler.h"
 #include "chrome/browser/policy/javascript_policy_handler.h"
 #include "chrome/browser/policy/network_prediction_policy_handler.h"
-#include "chrome/browser/policy/printing_restrictions_policy_handler.h"
 #include "chrome/browser/policy/webusb_allow_devices_for_urls_policy_handler.h"
 #include "chrome/browser/profiles/force_safe_search_policy_handler.h"
 #include "chrome/browser/profiles/force_youtube_safety_mode_policy_handler.h"
@@ -156,6 +155,10 @@
 #if BUILDFLAG(ENABLE_SPELLCHECK)
 #include "components/spellcheck/browser/pref_names.h"
 #endif  // BUILDFLAG(ENABLE_SPELLCHECK)
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/browser/policy/printing_restrictions_policy_handler.h"
+#endif
 
 namespace policy {
 namespace {
@@ -1499,12 +1502,14 @@ std::unique_ptr<ConfigurationPolicyHandlerList> BuildHandlerList(
       SimpleSchemaValidatingPolicyHandler::MANDATORY_ALLOWED));
   handlers->AddHandler(
       std::make_unique<WebUsbAllowDevicesForUrlsPolicyHandler>(chrome_schema));
+#if BUILDFLAG(ENABLE_PRINTING)
   handlers->AddHandler(
       std::make_unique<PrintingAllowedBackgroundGraphicsModesPolicyHandler>());
   handlers->AddHandler(
       std::make_unique<PrintingBackgroundGraphicsDefaultPolicyHandler>());
   handlers->AddHandler(
       std::make_unique<PrintingPaperSizeDefaultPolicyHandler>());
+#endif  // BUILDFLAG(ENABLE_PRINTING)
   handlers->AddHandler(std::make_unique<DeveloperToolsPolicyHandler>());
   handlers->AddHandler(std::make_unique<FileSelectionDialogsPolicyHandler>());
   handlers->AddHandler(std::make_unique<JavascriptPolicyHandler>());
