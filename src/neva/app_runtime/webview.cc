@@ -18,7 +18,6 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
-#include "base/logging_category.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "base/strings/utf_string_conversions.h"
 #include "browser/app_runtime_browser_context_adapter.h"
@@ -90,6 +89,10 @@ void GetPluginsCallback(const std::vector<content::WebPluginInfo>& plugins) {}
 #include "extensions/common/file_util.h"
 #include "extensions/shell/browser/shell_extension_system.h"
 #include "extensions/shell/browser/shell_extension_web_contents_observer.h"
+#endif
+
+#if defined(OS_WEBOS)
+#include "base/logging_category.h"
 #endif
 
 namespace {
@@ -484,11 +487,13 @@ bool WebView::DidAddMessageToConsole(
   if (renderer_prefs)
     app_id = renderer_prefs->application_id;
 
+#if defined(OS_WEBOS)
   logging::CategoryLogMessage("CONSOLE", line_no, resolved_level,
                               logging::LOG_CATEGORY_JSCONSOLE)
           .stream()
       << app_id << (app_id.empty() ? "" : " ") << "\"" << message
       << "\", source: " << source_id << " (" << line_no << ")";
+#endif
 
   return true;
 }
