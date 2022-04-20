@@ -29,7 +29,8 @@ namespace pal {
 
 std::unique_ptr<ApplicationRegistratorDelegate>
 PlatformFactory::CreateApplicationRegistratorDelegate(
-    std::string application_name,
+    const std::string& application_id,
+    const std::string& application_name,
     ApplicationRegistratorDelegate::RepeatingResponse callback) {
   return std::unique_ptr<ApplicationRegistratorDelegate>();
 }
