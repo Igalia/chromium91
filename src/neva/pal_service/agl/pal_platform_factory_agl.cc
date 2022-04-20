@@ -20,6 +20,7 @@
 
 #include "neva/pal_service/dummy/platform_system_delegate_dummy.h"
 #include "neva/pal_service/dummy/system_servicebridge_delegate_dummy.h"
+#include "neva/pal_service/os_crypt_delegate.h"
 #include "neva/pal_service/public/application_registrator_delegate.h"
 #include "neva/pal_service/public/language_tracker_delegate.h"
 #include "neva/pal_service/public/memorymanager_delegate.h"
@@ -29,13 +30,15 @@ namespace pal {
 
 std::unique_ptr<ApplicationRegistratorDelegate>
 PlatformFactory::CreateApplicationRegistratorDelegate(
-    std::string application_name,
+    const std::string& application_id,
+    const std::string& application_name,
     ApplicationRegistratorDelegate::RepeatingResponse callback) {
   return std::unique_ptr<ApplicationRegistratorDelegate>();
 }
 
 std::unique_ptr<LanguageTrackerDelegate>
 PlatformFactory::CreateLanguageTrackerDelegate(
+    const std::string& application_name,
     LanguageTrackerDelegate::RepeatingResponse callback) {
   return std::unique_ptr<LanguageTrackerDelegate>();
 }
@@ -57,6 +60,10 @@ PlatformFactory::CreateSystemServiceBridgeDelegate(
       std::move(params), std::move(callback));
 }
 
+std::unique_ptr<OSCryptDelegate> PlatformFactory::CreateOSCryptDelegate() {
+  return std::unique_ptr<OSCryptDelegate>();
+}
+
 std::unique_ptr<PlatformSystemDelegate>
 PlatformFactory::CreatePlatformSystemDelegate() {
   // PlatformSystemDelegate is used to provide a browser side handler of
@@ -64,11 +71,6 @@ PlatformFactory::CreatePlatformSystemDelegate() {
   // next lines should be replaced with
   // return std::make_unique<agl::PlatformSystemDelegateAGL>();
   return std::make_unique<dummy::PlatformSystemDelegateDummy>();
-}
-
-std::unique_ptr<NetworkErrorPageControllerDelegate>
-PlatformFactory::CreateNetworkErrorPageControllerDelegate() {
-  return std::unique_ptr<NetworkErrorPageControllerDelegate>();
 }
 
 }  // namespace pal

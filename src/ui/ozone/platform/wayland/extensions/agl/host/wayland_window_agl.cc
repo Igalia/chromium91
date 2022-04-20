@@ -20,6 +20,7 @@
 #include "ui/ozone/platform/wayland/extensions/agl/host/agl_shell_wrapper.h"
 #include "ui/ozone/platform/wayland/extensions/agl/host/wayland_extensions_agl.h"
 #include "ui/ozone/platform/wayland/host/shell_surface_wrapper.h"
+#include "ui/ozone/platform/wayland/host/shell_toplevel_wrapper.h"
 #include "ui/ozone/platform/wayland/host/wayland_connection.h"
 
 namespace ui {

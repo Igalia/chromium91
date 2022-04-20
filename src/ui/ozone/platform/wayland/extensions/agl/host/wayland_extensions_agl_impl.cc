@@ -29,6 +29,7 @@
 #include "ui/ozone/platform/wayland/host/input_panel_manager.h"
 #include "ui/ozone/platform/wayland/host/shell_popup_wrapper.h"
 #include "ui/ozone/platform/wayland/host/shell_surface_wrapper.h"
+#include "ui/ozone/platform/wayland/host/shell_toplevel_wrapper.h"
 #include "ui/ozone/platform/wayland/host/surface_group_compositor_wrapper.h"
 #include "ui/ozone/platform/wayland/host/wayland_connection.h"
 
