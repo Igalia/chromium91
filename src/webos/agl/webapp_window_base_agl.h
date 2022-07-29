@@ -42,7 +42,6 @@ class WEBOS_EXPORT WebAppWindowBaseAgl {
   void SetAglBackground();
   void SetAglReady();
   void SetAglPanel(int edge);
-  void SetWindowSurfaceId(int surface_id);
 
  private:
   WebAppWindowBase* webapp_window_base_;

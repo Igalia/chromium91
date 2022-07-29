@@ -36,7 +36,5 @@ void WebAppWindowBaseAgl::SetAglReady() {}
 
 void WebAppWindowBaseAgl::SetAglPanel(int edge) {}
 
-void WebAppWindowBaseAgl::SetWindowSurfaceId(int surface_id) {}
-
 }  // namespace agl
 }  // namespace webos
