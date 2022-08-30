@@ -82,6 +82,7 @@ constexpr uint32_t kMaxLinuxDmabufVersion = 3;
 constexpr uint32_t kMaxSeatVersion = 5;
 constexpr uint32_t kMaxShmVersion = 1;
 constexpr uint32_t kMaxXdgShellVersion = 1;
+constexpr uint32_t kMinDeviceManagerVersion = 1;
 constexpr uint32_t kMaxDeviceManagerVersion = 3;
 constexpr uint32_t kMaxWpPresentationVersion = 1;
 constexpr uint32_t kMaxWpViewporterVersion = 1;
@@ -89,9 +90,17 @@ constexpr uint32_t kMaxTextInputManagerVersion = 1;
 constexpr uint32_t kMaxExplicitSyncVersion = 2;
 constexpr uint32_t kMaxXdgDecorationVersion = 1;
 constexpr uint32_t kMaxExtendedDragVersion = 1;
+constexpr uint32_t kMaxXdgExporterVersion = 1;
+constexpr uint32_t kMaxWlDrmVersion = 2;
 // The minimum required version for a given interface.
 // Ensures that the version bound (advertised by server) is higher than this
 // value.
+constexpr uint32_t kMinAuraShellVersion = 1;
+constexpr uint32_t kMinCompositorVersion = 1;
+constexpr uint32_t kMinExplicitSyncVersion = 1;
+constexpr uint32_t kMinKeyboardExtensionVersion = 1;
+constexpr uint32_t kMinLinuxDmabufVersion = 1;
+constexpr uint32_t kMinSeatVersion = 1;
 constexpr uint32_t kMinWlDrmVersion = 2;
 constexpr uint32_t kMinWlOutputVersion = 2;
 }  // namespace
@@ -475,7 +484,9 @@ void WaylandConnection::Global(void* data,
     DVLOG(1) << "Successfully bound to " << interface;
   } else
   ///@}
-  if (!connection->compositor_ && strcmp(interface, "wl_compositor") == 0) {
+  if (!connection->compositor_ && strcmp(interface, "wl_compositor") == 0 &&
+      wl::CanBind(interface, version, kMinCompositorVersion,
+                  kMaxCompositorVersion)) {
     connection->compositor_ = wl::Bind<wl_compositor>(
         registry, name, std::min(version, kMaxCompositorVersion));
     connection->compositor_version_ = version;
@@ -486,14 +497,17 @@ void WaylandConnection::Global(void* data,
     connection->subcompositor_ = wl::Bind<wl_subcompositor>(registry, name, 1);
     if (!connection->subcompositor_)
       LOG(ERROR) << "Failed to bind to wl_subcompositor global";
-  } else if (!connection->shm_ && strcmp(interface, "wl_shm") == 0) {
+  } else if (!connection->shm_ && strcmp(interface, "wl_shm") == 0 &&
+             wl::CanBind(interface, version, kMaxShmVersion, kMaxShmVersion)) {
     wl::Object<wl_shm> shm =
         wl::Bind<wl_shm>(registry, name, std::min(version, kMaxShmVersion));
     connection->shm_ = std::make_unique<WaylandShm>(shm.release(), connection);
     if (!connection->shm_)
       LOG(ERROR) << "Failed to bind to wl_shm global";
 #if defined(USE_NEVA_APPRUNTIME)
-  } else if (strcmp(interface, "wl_seat") == 0) {
+  } else if (strcmp(interface, "wl_seat") == 0 &&
+             wl::CanBind(interface, version, kMinSeatVersion,
+                         kMaxSeatVersion)) {
     wl::Object<wl_seat> seat =
         wl::Bind<wl_seat>(registry, name, std::min(version, kMaxSeatVersion));
     if (!seat) {
@@ -503,7 +517,9 @@ void WaylandConnection::Global(void* data,
     if (connection->seat_manager_)
       connection->seat_manager_->AddSeat(connection, name, seat.release());
 #else   // defined(USE_NEVA_APPRUNTIME)
-  } else if (!connection->seat_ && strcmp(interface, "wl_seat") == 0) {
+  } else if (!connection->seat_ && strcmp(interface, "wl_seat") == 0 &&
+             wl::CanBind(interface, version, kMinSeatVersion,
+                         kMaxSeatVersion)) {
     connection->seat_ =
         wl::Bind<wl_seat>(registry, name, std::min(version, kMaxSeatVersion));
     if (!connection->seat_) {
@@ -514,7 +530,9 @@ void WaylandConnection::Global(void* data,
 #endif  // !defined(USE_NEVA_APPRUNTIME)
     connection->CreateDataObjectsIfReady();
   } else if (!connection->shell_v6_ &&
-             strcmp(interface, "zxdg_shell_v6") == 0) {
+             strcmp(interface, "zxdg_shell_v6") == 0 &&
+             wl::CanBind(interface, version, kMaxXdgShellVersion,
+                         kMaxXdgShellVersion)) {
     // Check for zxdg_shell_v6 first.
     connection->shell_v6_ = wl::Bind<zxdg_shell_v6>(
         registry, name, std::min(version, kMaxXdgShellVersion));
@@ -524,7 +542,9 @@ void WaylandConnection::Global(void* data,
     }
     zxdg_shell_v6_add_listener(connection->shell_v6_.get(), &shell_v6_listener,
                                connection);
-  } else if (!connection->shell_ && strcmp(interface, "xdg_wm_base") == 0) {
+  } else if (!connection->shell_ && strcmp(interface, "xdg_wm_base") == 0 &&
+             wl::CanBind(interface, version, kMaxXdgShellVersion,
+                         kMaxXdgShellVersion)) {
     connection->shell_ = wl::Bind<xdg_wm_base>(
         registry, name, std::min(version, kMaxXdgShellVersion));
     if (!connection->shell_) {
@@ -533,16 +553,11 @@ void WaylandConnection::Global(void* data,
     }
     xdg_wm_base_add_listener(connection->shell_.get(), &shell_listener,
                              connection);
-  } else if (base::EqualsCaseInsensitiveASCII(interface, "wl_output")) {
-    if (version < kMinWlOutputVersion) {
-      LOG(ERROR)
-          << "Unable to bind to the unsupported wl_output object with version= "
-          << version << ". Minimum supported version is "
-          << kMinWlOutputVersion;
-      return;
-    }
-
-    wl::Object<wl_output> output = wl::Bind<wl_output>(registry, name, version);
+  } else if (base::EqualsCaseInsensitiveASCII(interface, "wl_output") &&
+             wl::CanBind(interface, version, kMinWlOutputVersion,
+                         kMinWlOutputVersion)) {
+    wl::Object<wl_output> output = wl::Bind<wl_output>(
+        registry, name, std::min(version, kMinWlOutputVersion));
     if (!output) {
       LOG(ERROR) << "Failed to bind to wl_output global";
       return;
@@ -555,7 +570,9 @@ void WaylandConnection::Global(void* data,
     connection->wayland_output_manager_->AddWaylandOutput(name,
                                                           output.release());
   } else if (!connection->data_device_manager_ &&
-             strcmp(interface, "wl_data_device_manager") == 0) {
+             strcmp(interface, "wl_data_device_manager") == 0 &&
+             wl::CanBind(interface, version, kMinDeviceManagerVersion,
+                         kMaxDeviceManagerVersion)) {
     wl::Object<wl_data_device_manager> data_device_manager =
         wl::Bind<wl_data_device_manager>(
             registry, name, std::min(version, kMaxDeviceManagerVersion));
@@ -568,7 +585,10 @@ void WaylandConnection::Global(void* data,
             data_device_manager.release(), connection);
     connection->CreateDataObjectsIfReady();
   } else if (!connection->gtk_primary_selection_device_manager_ &&
-             strcmp(interface, "gtk_primary_selection_device_manager") == 0) {
+             strcmp(interface, "gtk_primary_selection_device_manager") == 0 &&
+             wl::CanBind(interface, version,
+                         kMaxGtkPrimarySelectionDeviceManagerVersion,
+                         kMaxGtkPrimarySelectionDeviceManagerVersion)) {
     wl::Object<::gtk_primary_selection_device_manager> manager =
         wl::Bind<::gtk_primary_selection_device_manager>(
             registry, name,
@@ -578,7 +598,10 @@ void WaylandConnection::Global(void* data,
                                                            connection);
   } else if (!connection->zwp_primary_selection_device_manager_ &&
              strcmp(interface, "zwp_primary_selection_device_manager_v1") ==
-                 0) {
+                 0 &&
+             wl::CanBind(interface, version,
+                         kMaxGtkPrimarySelectionDeviceManagerVersion,
+                         kMaxGtkPrimarySelectionDeviceManagerVersion)) {
     wl::Object<zwp_primary_selection_device_manager_v1> manager =
         wl::Bind<zwp_primary_selection_device_manager_v1>(
             registry, name,
@@ -588,27 +611,37 @@ void WaylandConnection::Global(void* data,
                                                            connection);
   } else if (!connection->linux_explicit_synchronization_ &&
              (strcmp(interface, "zwp_linux_explicit_synchronization_v1") ==
-              0)) {
+              0) &&
+             wl::CanBind(interface, version, kMinExplicitSyncVersion,
+                         kMaxExplicitSyncVersion)) {
     connection->linux_explicit_synchronization_ =
         wl::Bind<zwp_linux_explicit_synchronization_v1>(
             registry, name, std::min(version, kMaxExplicitSyncVersion));
   } else if (!connection->zwp_dmabuf_ &&
-             (strcmp(interface, "zwp_linux_dmabuf_v1") == 0)) {
+             (strcmp(interface, "zwp_linux_dmabuf_v1") == 0) &&
+             wl::CanBind(interface, version, kMinLinuxDmabufVersion,
+                         kMaxLinuxDmabufVersion)) {
     wl::Object<zwp_linux_dmabuf_v1> zwp_linux_dmabuf =
         wl::Bind<zwp_linux_dmabuf_v1>(
             registry, name, std::min(version, kMaxLinuxDmabufVersion));
     connection->zwp_dmabuf_ = std::make_unique<WaylandZwpLinuxDmabuf>(
         zwp_linux_dmabuf.release(), connection);
   } else if (!connection->presentation_ &&
-             (strcmp(interface, "wp_presentation") == 0)) {
+             (strcmp(interface, "wp_presentation") == 0) &&
+             wl::CanBind(interface, version, kMaxWpPresentationVersion,
+                         kMaxWpPresentationVersion)) {
     connection->presentation_ = wl::Bind<wp_presentation>(
         registry, name, std::min(version, kMaxWpPresentationVersion));
   } else if (!connection->viewporter_ &&
-             (strcmp(interface, "wp_viewporter") == 0)) {
+             (strcmp(interface, "wp_viewporter") == 0) &&
+             wl::CanBind(interface, version, kMaxWpViewporterVersion,
+                         kMaxWpViewporterVersion)) {
     connection->viewporter_ = wl::Bind<wp_viewporter>(
         registry, name, std::min(version, kMaxWpViewporterVersion));
   } else if (!connection->zcr_cursor_shapes_ &&
-             strcmp(interface, "zcr_cursor_shapes_v1") == 0) {
+             strcmp(interface, "zcr_cursor_shapes_v1") == 0 &&
+             wl::CanBind(interface, version, kMaxCursorShapesVersion,
+                         kMaxCursorShapesVersion)) {
     auto zcr_cursor_shapes = wl::Bind<zcr_cursor_shapes_v1>(
         registry, name, std::min(version, kMaxCursorShapesVersion));
     if (!zcr_cursor_shapes) {
@@ -618,7 +651,9 @@ void WaylandConnection::Global(void* data,
     connection->zcr_cursor_shapes_ = std::make_unique<WaylandZcrCursorShapes>(
         zcr_cursor_shapes.release(), connection);
   } else if (!connection->keyboard_extension_v1_ &&
-             strcmp(interface, "zcr_keyboard_extension_v1") == 0) {
+             strcmp(interface, "zcr_keyboard_extension_v1") == 0 &&
+             wl::CanBind(interface, version, kMinKeyboardExtensionVersion,
+                         kMaxKeyboardExtensionVersion)) {
     connection->keyboard_extension_v1_ = wl::Bind<zcr_keyboard_extension_v1>(
         registry, name, std::min(version, kMaxKeyboardExtensionVersion));
     if (!connection->keyboard_extension_v1_) {
@@ -634,7 +669,9 @@ void WaylandConnection::Global(void* data,
     connection->CreateKeyboard();
 #endif  // !defined(USE_NEVA_APPRUNTIME)
   } else if (!connection->text_input_manager_v1_ &&
-             strcmp(interface, "zwp_text_input_manager_v1") == 0) {
+             strcmp(interface, "zwp_text_input_manager_v1") == 0 &&
+             wl::CanBind(interface, version, kMaxTextInputManagerVersion,
+                         kMaxTextInputManagerVersion)) {
     connection->text_input_manager_v1_ = wl::Bind<zwp_text_input_manager_v1>(
         registry, name, std::min(version, kMaxTextInputManagerVersion));
     if (!connection->text_input_manager_v1_) {
@@ -642,18 +679,26 @@ void WaylandConnection::Global(void* data,
       return;
     }
   } else if (!connection->xdg_foreign_ &&
-             strcmp(interface, "zxdg_exporter_v1") == 0) {
+             strcmp(interface, "zxdg_exporter_v1") == 0 &&
+             wl::CanBind(interface, version, kMaxXdgExporterVersion,
+                         kMaxXdgExporterVersion)) {
     connection->xdg_foreign_ = std::make_unique<XdgForeignWrapper>(
-        connection, wl::Bind<zxdg_exporter_v1>(registry, name, version));
+        connection,
+        wl::Bind<zxdg_exporter_v1>(registry, name,
+                                   std::min(version, kMaxXdgExporterVersion)));
 #if !defined(OS_WEBOS)
   } else if (!connection->drm_ && (strcmp(interface, "wl_drm") == 0) &&
-             version >= kMinWlDrmVersion) {
-    auto wayland_drm = wl::Bind<struct wl_drm>(registry, name, version);
+             wl::CanBind(interface, version, kMinWlDrmVersion,
+                         kMaxWlDrmVersion)) {
+    auto wayland_drm = wl::Bind<struct wl_drm>(
+        registry, name, std::min(version, kMaxWlDrmVersion));
     connection->drm_ =
         std::make_unique<WaylandDrm>(wayland_drm.release(), connection);
 #endif  // !defined(OS_WEBOS)
   } else if (!connection->zaura_shell_ &&
-             (strcmp(interface, "zaura_shell") == 0)) {
+             (strcmp(interface, "zaura_shell") == 0) &&
+             wl::CanBind(interface, version, kMinAuraShellVersion,
+                         kMaxAuraShellVersion)) {
     auto zaura_shell = wl::Bind<struct zaura_shell>(
         registry, name, std::min(version, kMaxAuraShellVersion));
     if (!zaura_shell) {
@@ -663,12 +708,16 @@ void WaylandConnection::Global(void* data,
     connection->zaura_shell_ =
         std::make_unique<WaylandZAuraShell>(zaura_shell.release(), connection);
   } else if (!connection->xdg_decoration_manager_ &&
-             strcmp(interface, "zxdg_decoration_manager_v1") == 0) {
+             strcmp(interface, "zxdg_decoration_manager_v1") == 0 &&
+             wl::CanBind(interface, version, kMaxXdgDecorationVersion,
+                         kMaxXdgDecorationVersion)) {
     connection->xdg_decoration_manager_ =
         wl::Bind<struct zxdg_decoration_manager_v1>(
             registry, name, std::min(version, kMaxXdgDecorationVersion));
   } else if (!connection->extended_drag_v1_ &&
-             strcmp(interface, "zcr_extended_drag_v1") == 0) {
+             strcmp(interface, "zcr_extended_drag_v1") == 0 &&
+             wl::CanBind(interface, version, kMaxExtendedDragVersion,
+                         kMaxExtendedDragVersion)) {
     connection->extended_drag_v1_ = wl::Bind<zcr_extended_drag_v1>(
         registry, name, std::min(version, kMaxExtendedDragVersion));
     if (!connection->extended_drag_v1_) {

@@ -37,6 +37,7 @@ namespace ui {
 
 namespace {
 
+constexpr uint32_t kMinAglShellExtensionVersion = 1;
 constexpr uint32_t kMaxAglShellExtensionVersion = 1;
 
 }  // namespace
@@ -54,9 +55,12 @@ bool WaylandExtensionsAglImpl::Bind(wl_registry* registry,
   bool should_use_agl_shell =
       base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAglShellAppId);
 
-  if (should_use_agl_shell && !agl_shell_ && (strcmp(interface, "agl_shell") == 0)) {
-    wl::Object<agl_shell> aglshell =
-        wl::Bind<agl_shell>(registry, name, kMaxAglShellExtensionVersion);
+  if (should_use_agl_shell && !agl_shell_ &&
+      (strcmp(interface, "agl_shell") == 0) &&
+      wl::CanBind(interface, version, kMinAglShellExtensionVersion,
+                  kMaxAglShellExtensionVersion)) {
+    wl::Object<agl_shell> aglshell = wl::Bind<agl_shell>(
+        registry, name, std::min(version, kMaxAglShellExtensionVersion));
     if (!aglshell) {
       LOG(ERROR) << "Failed to bind to agl_shell global";
       return false;

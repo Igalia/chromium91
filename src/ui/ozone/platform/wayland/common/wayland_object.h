@@ -472,6 +472,17 @@ wl::Object<T> Bind(wl_registry* registry, uint32_t name, uint32_t version) {
       registry, name, ObjectTraits<T>::interface, version));
 }
 
+// Checks the given |available_version| exposed by the server against
+// |min_version| and |max_version| supported by the client.
+// Returns false (with rendering a warning) if |available_version| is less than
+// the minimum supported version.
+// Returns true otherwise, renders an info message if |available_version| is
+// greater than the maximum supported one.
+bool CanBind(const std::string& interface,
+             uint32_t available_version,
+             uint32_t min_version,
+             uint32_t max_version);
+
 }  // namespace wl
 
 #endif  // UI_OZONE_PLATFORM_WAYLAND_COMMON_WAYLAND_OBJECT_H_
