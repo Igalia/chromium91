@@ -67,6 +67,10 @@ config("config") {
     defines += [ "IS_AGL=1" ]
   }
 
+  if (is_agl_devel) {
+    defines += [ "IS_AGL_DEVEL=1" ]
+  }
+
   if (use_neva_appruntime) {
     defines += [ "USE_NEVA_APPRUNTIME=1" ]
   }
