@@ -19,6 +19,7 @@
 declare_args() {
   # AGL chromium%.bb recipe uses it
   is_agl = false
+  is_agl_devel = false
 }
 
 declare_args() {
