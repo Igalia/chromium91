@@ -38,7 +38,7 @@ namespace ui {
 namespace {
 
 constexpr uint32_t kMinAglShellExtensionVersion = 1;
-constexpr uint32_t kMaxAglShellExtensionVersion = 1;
+constexpr uint32_t kMaxAglShellExtensionVersion = 2;
 
 }  // namespace
 
@@ -52,8 +52,8 @@ bool WaylandExtensionsAglImpl::Bind(wl_registry* registry,
                                     uint32_t name,
                                     const char* interface,
                                     uint32_t version) {
-  bool should_use_agl_shell =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAglShellAppId);
+  bool should_use_agl_shell = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kAglShellAppId);
 
   if (should_use_agl_shell && !agl_shell_ &&
       (strcmp(interface, "agl_shell") == 0) &&
@@ -67,7 +67,8 @@ bool WaylandExtensionsAglImpl::Bind(wl_registry* registry,
     }
     agl_shell_ =
         std::make_unique<AglShellWrapper>(aglshell.release(), connection_);
-    return true;
+
+    return agl_shell_->WaitUntilBoundOk();
   }
 
   return false;
