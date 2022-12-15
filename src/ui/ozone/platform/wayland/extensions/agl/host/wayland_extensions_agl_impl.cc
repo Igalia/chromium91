@@ -38,7 +38,7 @@ namespace ui {
 namespace {
 
 constexpr uint32_t kMinAglShellExtensionVersion = 1;
-constexpr uint32_t kMaxAglShellExtensionVersion = 2;
+constexpr uint32_t kMaxAglShellExtensionVersion = 3;
 
 }  // namespace
 

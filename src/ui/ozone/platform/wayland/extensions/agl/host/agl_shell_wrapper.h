@@ -19,6 +19,8 @@
 
 #include <string>
 
+#include <agl-shell-client-protocol.h>
+
 #include "ui/ozone/platform/wayland/extensions/agl/common/wayland_object_agl.h"
 
 namespace ui {
@@ -41,6 +43,12 @@ class AglShellWrapper {
 
   static void AglShellBoundOk(void* data, struct agl_shell*);
   static void AglShellBoundFail(void* data, struct agl_shell*);
+#ifdef AGL_SHELL_APP_STATE_SINCE_VERSION
+  static void AglAppState(void* data,
+                          struct agl_shell*,
+                          const char* app_id,
+                          uint32_t state);
+#endif
 
  private:
   wl::Object<agl_shell> agl_shell_;
