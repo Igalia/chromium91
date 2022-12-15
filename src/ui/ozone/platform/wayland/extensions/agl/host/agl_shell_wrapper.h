@@ -37,11 +37,16 @@ class AglShellWrapper {
   void SetAglPanel(WaylandWindow* window, uint32_t edge);
   void SetAglBackground(WaylandWindow* window);
   void SetAglReady();
+  bool WaitUntilBoundOk();
+
+  static void AglShellBoundOk(void* data, struct agl_shell*);
+  static void AglShellBoundFail(void* data, struct agl_shell*);
 
  private:
   wl::Object<agl_shell> agl_shell_;
-
   WaylandConnection* connection_;
+  bool wait_for_bound_ = true;
+  bool bound_ok_ = false;
 };
 
 }  // namespace ui
