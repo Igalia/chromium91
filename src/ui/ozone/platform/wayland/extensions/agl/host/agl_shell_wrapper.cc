@@ -16,10 +16,9 @@
 
 #include "ui/ozone/platform/wayland/extensions/agl/host/agl_shell_wrapper.h"
 
-#include <agl-shell-client-protocol.h>
-
 #include "agl_shell_wrapper.h"
 #include "base/logging.h"
+#include "base/stl_util.h"
 #include "ui/ozone/platform/wayland/host/wayland_connection.h"
 #include "ui/ozone/platform/wayland/host/wayland_output_manager.h"
 #include "ui/ozone/platform/wayland/host/wayland_window.h"
@@ -29,6 +28,9 @@ namespace ui {
 static const struct agl_shell_listener shell_listener = {
     &AglShellWrapper::AglShellBoundOk,
     &AglShellWrapper::AglShellBoundFail,
+#ifdef AGL_SHELL_APP_STATE_SINCE_VERSION
+    &AglShellWrapper::AglAppState,
+#endif
 };
 
 AglShellWrapper::AglShellWrapper(agl_shell* agl_shell,
@@ -81,6 +83,31 @@ void AglShellWrapper::AglShellBoundFail(void* data, struct agl_shell*) {
   wrapper->bound_ok_ = false;
   LOG(INFO) << "Failed to bind to agl_shell (bound_fail)";
 }
+
+#ifdef AGL_SHELL_APP_STATE_SINCE_VERSION
+// static
+void AglShellWrapper::AglAppState(void* data,
+                                  struct agl_shell*,
+                                  const char* app_id,
+                                  uint32_t state) {
+  AglShellWrapper* wrapper = static_cast<AglShellWrapper*>(data);
+  static const char* const state2string[] = {
+      "started",
+      "terminated",
+      "activated",
+      "deactivated",
+  };
+
+  LOG(INFO) << "State for app " << app_id << " changed to "
+            << (state < base::size(state2string) ? state2string[state]
+                                                 : "unknown");
+
+  if (state == AGL_SHELL_APP_STATE_STARTED) {
+    wrapper->SetAglActivateApp(app_id);
+    LOG(INFO) << "Activating app " << app_id;
+  }
+}
+#endif
 
 bool AglShellWrapper::WaitUntilBoundOk() {
   int ret = 0;
