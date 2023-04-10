@@ -16,35 +16,78 @@
 
 #include "neva/pal_service/agl/appservice_delegate_agl.h"
 
+#include <grpcpp/grpcpp.h>
+
 #include "base/callback_helpers.h"
 #include "base/json/json_writer.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "base/threading/simple_thread.h"
 #include "base/values.h"
-#include "components/dbus/thread_linux/dbus_thread_linux.h"
-#include "dbus/bus.h"
-#include "dbus/message.h"
-#include "dbus/object_proxy.h"
-#include "dbus/values_util.h"
+#include "neva/pal_service/agl/protos/applauncher.grpc.pb.h"
 
 namespace pal {
 namespace agl {
 
 namespace {
 
-const char kAutomotiveLinuxAppLaunchName[] = "org.automotivelinux.AppLaunch";
-const char kAutomotiveLinuxAppLaunchPath[] = "/org/automotivelinux/AppLaunch";
-const char kMethodStart[] = "start";
-const char kMethodListApplications[] = "listApplications";
-const char kSignalStarted[] = "started";
-const char kDefaultGetApplicationsResponse[] = "{}";
+using GRPCClientReader =  std::unique_ptr<grpc::ClientReader<automotivegradelinux::StatusResponse>>;
 
 class AppLaunchHelper {
  public:
   using OnceResponse = base::OnceCallback<void(const std::string&)>;
   using RepeatingCallback = base::RepeatingCallback<void(const std::string&)>;
 
-  AppLaunchHelper() = default;
+  class AppStatusPollingWorker : public base::DelegateSimpleThread::Delegate {
+   public:
+    AppStatusPollingWorker(AppLaunchHelper *helper)
+      : helper_{helper}
+      , thread_{MakeThread()} {
+        thread_->StartAsync();
+    }
+
+    void Run() override {
+      VLOG(1) << __func__ << " Started appstatus polling thread...";
+      grpc::ClientContext context;
+      automotivegradelinux::StatusResponse response;
+
+      // StatusRequest doesn't have any members, so call GetStatusEvents with an empty request
+      GRPCClientReader reader(helper_->stub_->GetStatusEvents(&context,
+                                                              automotivegradelinux::StatusRequest()));
+
+      // applaunchd doesn't finish its notification loop, meaning that our
+      // thread should keep waiting for new events.
+      // See applaunchd's AppLauncherImpl::SendStatus()
+      while (reader->Read(&response)) {
+        if (response.has_app()) {
+          automotivegradelinux::AppStatus app_status = response.app();
+          VLOG(1) << __func__ << " received status " << app_status.status()
+                  << " for app " << app_status.id();
+          if (app_status.status() == "started") {
+            helper_->subscription_callback_.Run(app_status.id());
+          }
+          // TODO(rzanoni): handle "terminated"
+        }
+      }
+
+      grpc::Status status = reader->Finish();
+      VLOG(1) << __func__ << " status=" << status.ok();
+    }
+
+   private:
+    std::unique_ptr<base::DelegateSimpleThread> MakeThread() {
+      return std::make_unique<base::DelegateSimpleThread>(this, "ApplauncherAppStatusPollWorker",
+                                                          base::SimpleThread::Options());
+    }
+
+    AppLaunchHelper* helper_;
+    std::unique_ptr<base::SimpleThread> thread_;
+  };
+
+  AppLaunchHelper()
+    : stub_{MakeStub()}
+    , app_status_worker_{this} {}
+
   AppLaunchHelper(const AppLaunchHelper&) = delete;
   AppLaunchHelper& operator=(const AppLaunchHelper&) = delete;
 
@@ -54,31 +97,43 @@ class AppLaunchHelper {
   }
 
   void Start(const std::string& application_id) {
-    EnsureProxy();
+    automotivegradelinux::StartRequest request;
+    request.set_id(application_id);
 
-    dbus::MethodCall method_call(kAutomotiveLinuxAppLaunchName, kMethodStart);
-    dbus::MessageWriter writer(&method_call);
+    grpc::ClientContext context;
+    automotivegradelinux::StartResponse response;
 
-    writer.AppendString(application_id);
-
-    applaunch_proxy_->CallMethod(&method_call,
-                                 dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-                                 base::DoNothing());
+    grpc::Status status = stub_->StartApplication(&context, request, &response);
+    VLOG(1) << __func__ << " status.ok=" << status.ok();
   }
 
   void GetApplications(bool only_graphical, OnceResponse callback) {
-    EnsureProxy();
+    automotivegradelinux::ListRequest request;
+    automotivegradelinux::ListResponse response;
+    grpc::ClientContext context;
 
-    dbus::MethodCall method_call(kAutomotiveLinuxAppLaunchName,
-                                 kMethodListApplications);
-    dbus::MessageWriter writer(&method_call);
+    grpc::Status status = stub_->ListApplications(&context, request, &response);
+    VLOG(1) << __func__ << " status.ok=" << status.ok();
+    if (!status.ok())
+      return;
 
-    writer.AppendBool(only_graphical);
+    base::Value apps_list(base::Value::Type::LIST);
+    for (int i = 0; i < response.apps_size(); i++) {
+      automotivegradelinux::AppInfo app_info = response.apps(i);
+      base::Value app_info_dict(base::Value::Type::DICTIONARY);
+      app_info_dict.SetKey("id", base::Value(app_info.id()));
+      app_info_dict.SetKey("name", base::Value(app_info.name()));
+      app_info_dict.SetKey("icon", base::Value(app_info.icon_path()));
+      apps_list.Append(std::move(app_info_dict));
+    }
 
-    applaunch_proxy_->CallMethod(
-        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-        base::BindOnce(&AppLaunchHelper::OnListApplicationsResponse,
-                       weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
+    std::string response_string;
+    if (!base::JSONWriter::Write(apps_list, &response_string)) {
+      VLOG(1) << __func__ << " Failed to write JSON.";
+      return;
+    }
+
+    std::move(callback).Run(response_string);
   }
 
   void SubscribeToApplicationStarted(RepeatingCallback callback) {
@@ -91,86 +146,16 @@ class AppLaunchHelper {
   bool IsSubscribed() const { return subscribed_; }
 
  private:
-  void EnsureProxy() {
-    if (!bus_) {
-      dbus::Bus::Options bus_options;
-      bus_options.bus_type = dbus::Bus::SESSION;
-      bus_options.connection_type = dbus::Bus::PRIVATE;
-      bus_options.dbus_task_runner = dbus_thread_linux::GetTaskRunner();
-      bus_ = base::MakeRefCounted<dbus::Bus>(bus_options);
-    }
-
-    if (!applaunch_proxy_) {
-      applaunch_proxy_ =
-          bus_->GetObjectProxy(kAutomotiveLinuxAppLaunchName,
-                               dbus::ObjectPath(kAutomotiveLinuxAppLaunchPath));
-      applaunch_proxy_->ConnectToSignal(
-          kAutomotiveLinuxAppLaunchName, kSignalStarted,
-          base::BindRepeating(&AppLaunchHelper::OnStarted,
-                              weak_ptr_factory_.GetWeakPtr()),
-          base::BindOnce(&AppLaunchHelper::OnSignalConnected,
-                         weak_ptr_factory_.GetWeakPtr()));
-    }
+  std::shared_ptr<automotivegradelinux::AppLauncher::Stub> MakeStub() const {
+    return automotivegradelinux::AppLauncher::NewStub(grpc::CreateChannel("localhost:50052",
+                                         grpc::InsecureChannelCredentials()));
   }
 
-  void ReturnEmptyListApplications(OnceResponse callback) {
-    std::move(callback).Run(kDefaultGetApplicationsResponse);
-  }
-
-  void OnListApplicationsResponse(OnceResponse callback,
-                                  dbus::Response* response) {
-    if (!response) {
-      LOG(ERROR) << __func__
-                 << " failed to get a DBus response from ListApplications";
-      ReturnEmptyListApplications(std::move(callback));
-      return;
-    }
-
-    dbus::MessageReader reader(response);
-    std::unique_ptr<base::Value> response_value = dbus::PopDataAsValue(&reader);
-    if (!response_value) {
-      LOG(ERROR) << __func__ << " failed to retrieve listApplications response";
-      ReturnEmptyListApplications(std::move(callback));
-      return;
-    }
-
-    std::string response_string;
-    if (!base::JSONWriter::Write(*response_value, &response_string)) {
-      LOG(ERROR) << __func__
-                 << " failed to generate the JSON string of the response";
-      ReturnEmptyListApplications(std::move(callback));
-      return;
-    }
-    std::move(callback).Run(response_string);
-  }
-
-  void OnStarted(dbus::Signal* signal) {
-    if (!subscribed_)
-      return;
-
-    dbus::MessageReader reader(signal);
-    std::string application_id;
-    if (!reader.PopString(&application_id)) {
-      LOG(ERROR) << __func__ << "no application id on signal "
-                 << signal->ToString();
-      return;
-    }
-    subscription_callback_.Run(application_id);
-  }
-
-  void OnSignalConnected(const std::string& interface,
-                         const std::string& signal,
-                         bool succeeded) {
-    LOG_IF(ERROR, !succeeded)
-        << "Connect to " << interface << " " << signal << " failed.";
-  }
-
-  scoped_refptr<dbus::Bus> bus_;
-  dbus::ObjectProxy* applaunch_proxy_ = nullptr;
   RepeatingCallback subscription_callback_;
   bool subscribed_ = false;
-
+  std::shared_ptr<automotivegradelinux::AppLauncher::Stub> stub_;
   base::WeakPtrFactory<AppLaunchHelper> weak_ptr_factory_{this};
+  AppStatusPollingWorker app_status_worker_;
 };
 
 }  // namespace

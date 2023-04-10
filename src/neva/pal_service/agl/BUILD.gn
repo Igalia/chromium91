@@ -16,8 +16,14 @@
 
 import("//build/config/features.gni")
 import("//neva/pal_service/pal_service.gni")
+import("//third_party/grpc/grpc_library.gni")
 
 assert(use_dbus)
+
+grpc_library("applauncher_lib") {
+  sources = [ "protos/applauncher.proto" ]
+  proto_out_dir = "neva/pal_service/agl/protos"
+}
 
 source_set("pal_service_agl") {
   sources = [
@@ -26,6 +32,8 @@ source_set("pal_service_agl") {
     "pal_platform_factory_agl.cc",
   ]
 
+  configs += [ "//third_party/grpc:grpc_config" ]
+
   defines = pal_service_defines
 
   # When the implementation for AGL is done, the dependency on
@@ -33,9 +41,11 @@ source_set("pal_service_agl") {
   # with "//neva/pal_service/agl:pal_service_agl".
   deps = [
     "//base",
-    "//dbus",
     "//components/dbus/thread_linux",
     "//neva/pal_service/dummy:pal_service_dummy",
     "//neva/pal_service/public/mojom",
+    "//third_party/grpc:grpc++",
+    "//third_party/protobuf:protobuf_lite",
+    ":applauncher_lib",
   ]
 }
